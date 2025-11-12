@@ -1,4 +1,4 @@
-# .github/workflows/main.yml (最終修正版)
+# .github/workflows/main.yml (最終兵器導入版)
 name: Update Otomad News
 
 on:
@@ -19,8 +19,8 @@ jobs:
           python-version: '3.10'
 
       - name: Install dependencies
-        # requestsライブラリを追加
-        run: pip install feedparser requests
+        # 超高性能ライブラリ(curl_cffi)をインストールする
+        run: pip install feedparser curl_cffi
 
       - name: Run Python script to generate HTML
         run: python update_html.py
