@@ -1,19 +1,16 @@
 # update_html.py (最終決戦コード)
-import requests # requestsライブラリをインポート
-import urllib.parse
+from curl_cffi import requests # 超高性能ライブラリをインポート
+import feedparser
 from datetime import datetime, timezone, timedelta
 
 # --- 設定項目 ---
-GITHUB_USER_NAME = "ooaaoaoaoaoa" # ★書き換える
-GITHUB_REPO_NAME = "pa"   # ★書き換える
+GITHUB_USER_NAME = "ooaaoaoaoaoa"
+GITHUB_REPO_NAME = "pa"
 PAGES_TO_FETCH = 3
 # --------------
 
 JST = timezone(timedelta(hours=9), 'JST')
-# ニコニコのRSS URL
-NICO_RSS_URL = "https://www.nicovideo.jp/tag/音MAD?sort=f&rss=2.0"
-# 代理人（RSS変換サービス）のURL
-RSS2JSON_API_URL = "https://api.rss2json.com/v1/api.json"
+RSS_URL = "https://www.nicovideo.jp/tag/音MAD?sort=f&rss=2.0"
 ACTIONS_URL = f"https://github.com/{GITHUB_USER_NAME}/{GITHUB_REPO_NAME}/actions/workflows/main.yml"
 
 HTML_TEMPLATE = """
@@ -56,48 +53,45 @@ HTML_TEMPLATE = """
 """
 
 def main():
-    all_items = []
-    for page_num in range(1, PAGES_TO_FETCH + 1):
-        # ページ指定付きのRSS URLを作成
-        paginated_rss_url = f"{NICO_RSS_URL}&page={page_num}"
-        # 代理人サービスに渡すためのURLを作成
-        params = {'rss_url': paginated_rss_url}
-        
-        try:
-            print(f"Fetching page {page_num} via proxy...")
-            # 代理人サービスにアクセス
-            response = requests.get(RSS2JSON_API_URL, params=params, timeout=15)
-            response.raise_for_status() # エラーがあればここで例外を発生させる
-            data = response.json()
-            
-            # 結果を受け取ってリストに追加
-            if data.get('status') == 'ok' and data.get('items'):
-                all_items.extend(data['items'])
-            else:
-                print(f"No items found on page {page_num}. Stopping.")
-                break # アイテムがなければループを抜ける
-        except requests.exceptions.RequestException as e:
-            print(f"Error fetching data: {e}")
-            break # エラーが発生したらループを抜ける
+    all_entries = []
+    # セッションを作成して、ブラウザの偽装情報を使いまわす
+    session = requests.Session()
     
-    print(f"Total {len(all_items)} items fetched.")
+    for page_num in range(1, PAGES_TO_FETCH + 1):
+        paginated_url = f"{RSS_URL}&page={page_num}"
+        try:
+            print(f"Fetching page {page_num} with advanced impersonation...")
+            # ブラウザを完全に偽装してアクセスする (impersonate="chrome110")
+            response = session.get(paginated_url, impersonate="chrome110", timeout=20)
+            response.raise_for_status()
 
-    if not all_items:
+            # 取得したXMLテキストをfeedparserに渡して解析
+            feed = feedparser.parse(response.text)
+            
+            if not feed.entries:
+                print(f"No items found on page {page_num}. Stopping.")
+                break
+            all_entries.extend(feed.entries)
+        except Exception as e:
+            print(f"Error fetching data on page {page_num}: {e}")
+            break
+    
+    print(f"Total {len(all_entries)} items fetched.")
+
+    if not all_entries:
         content_html = '<div class="error-message"><strong>動画リストの取得に失敗しました。</strong><br>ニコニコ動画が一時的に不安定か、ネットワークの問題が発生した可能性があります。しばらくしてから手動で更新してみてください。</div>'
     else:
         content_list = []
-        for item in all_items:
-            title = item.get('title', 'タイトル不明')
-            link = item.get('link', '#')
-            # pubDateの形式 '2024-05-25 08:30:00' をdatetimeオブジェクトに変換
+        for entry in all_entries:
+            title = entry.get('title', 'タイトル不明')
+            link = entry.get('link', '#')
             try:
-                # タイムゾーン情報がないので、JSTとみなして扱う
-                pub_date = datetime.strptime(item.get('pubDate'), '%Y-%m-%d %H:%M:%S').replace(tzinfo=JST)
-                pub_date_str = pub_date.strftime('%Y-%m-%d %H:%M')
-            except (ValueError, TypeError):
-                pub_date_str = item.get('pubDate', '取得失敗')
+                pub_date_utc = datetime(*entry.published_parsed[:6], tzinfo=timezone.utc)
+                pub_date_jst = pub_date_utc.astimezone(JST).strftime('%Y-%m-%d %H:%M')
+            except (AttributeError, TypeError):
+                 pub_date_jst = entry.get('published', '取得失敗')
             
-            content_list.append(f'<li><a href="{link}" target="_blank" rel="noopener noreferrer">{title}</a><span class="pub-date">{pub_date_str}</span></li>')
+            content_list.append(f'<li><a href="{link}" target="_blank" rel="noopener noreferrer">{title}</a><span class="pub-date">{pub_date_jst}</span></li>')
         content_html = f'<ul>\n{"".join(content_list)}\n</ul>'
 
     update_time_str = datetime.now(JST).strftime('%Y-%m-%d %H:%M:%S JST')
