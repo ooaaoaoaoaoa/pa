@@ -15,6 +15,7 @@
         ul { list-style-type: none; padding: 0; }
         li { background-color: #fff; margin-bottom: 10px; padding: 15px; border-radius: 5px; box-shadow: 0 2px 4px rgba(0,0,0,0.08); transition: transform 0.2s; }
         li:hover { transform: translateY(-2px); }
+        .error-message { background-color: #fff7f7; color: #d8000c; padding: 20px; text-align: center; border: 1px solid #ffbaba; border-radius: 5px; }
         a { text-decoration: none; color: #0066cc; font-weight: bold; }
         a:hover { text-decoration: underline; }
         .pub-date { display: block; font-size: 0.8em; color: #777; margin-top: 5px; }
@@ -27,11 +28,9 @@
             <h1>音MAD新着リスト</h1>
             <a href="https://github.com/ooaaoaoaoaoa/pa/actions/workflows/main.yml" target="_blank" class="update-button">手動で更新</a>
         </div>
-        <ul>
-            
-        </ul>
+        <div class="error-message"><strong>動画リストの取得に失敗しました。</strong><br>ニコニコ動画が一時的に不安定か、ネットワークの問題が発生した可能性があります。しばらくしてから手動で更新してみてください。</div>
         <div class="footer">
-            最終更新: 2025-11-13 00:37:00 JST
+            最終更新: 2025-11-13 00:49:35 JST
         </div>
     </div>
 </body>
