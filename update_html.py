@@ -1,4 +1,4 @@
-# update_html.py (改良版)
+# update_html.py (最終対策版)
 import feedparser
 from datetime import datetime, timezone, timedelta
 
@@ -7,6 +7,11 @@ GITHUB_USER_NAME = "ooaaoaoaoaoa" # ★書き換える
 GITHUB_REPO_NAME = "pa"   # ★書き換える
 PAGES_TO_FETCH = 3
 # --------------
+
+# ★★★ここが今回の対策部分★★★
+# ブラウザの身分証明書（User-Agent）を設定
+USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36"
+# ★★★★★★★★★★★★★★★★★
 
 JST = timezone(timedelta(hours=9), 'JST')
 RSS_URL = "https://www.nicovideo.jp/tag/音MAD?sort=f&rss=2.0"
@@ -56,19 +61,26 @@ def main():
     for page_num in range(1, PAGES_TO_FETCH + 1):
         paginated_url = f"{RSS_URL}&page={page_num}"
         print(f"Fetching page {page_num}...")
-        feed = feedparser.parse(paginated_url)
+        
+        # ★★★ここが今回の対策部分★★★
+        # 身分証明書（USER_AGENT）を付けて情報を取得しにいく
+        feed = feedparser.parse(paginated_url, agent=USER_AGENT)
+        # ★★★★★★★★★★★★★★★★★
+        
         if not feed.entries:
+            # ページにこれ以上アイテムがない場合、ループを抜ける
+            if page_num > 1 and len(all_entries) > 0:
+                print("No more items found on subsequent pages.")
+            else:
+                print("No items found on the first page.")
             break
         all_entries.extend(feed.entries)
     
     print(f"Total {len(all_entries)} items fetched.")
 
-    # --- ▼ここからが改良部分▼ ---
     if not all_entries:
-        # 1件も動画が取得できなかった場合の処理
         content_html = '<div class="error-message"><strong>動画リストの取得に失敗しました。</strong><br>ニコニコ動画が一時的に不安定か、ネットワークの問題が発生した可能性があります。しばらくしてから手動で更新してみてください。</div>'
     else:
-        # 動画が取得できた場合の通常の処理
         content_list = []
         for entry in all_entries:
             title = entry.title
@@ -79,9 +91,7 @@ def main():
             except:
                 pub_date_jst = "取得失敗"
             content_list.append(f'<li><a href="{link}" target="_blank" rel="noopener noreferrer">{title}</a><span class="pub-date">{pub_date_jst}</span></li>')
-        
         content_html = f'<ul>\n{"".join(content_list)}\n</ul>'
-    # --- ▲ここまでが改良部分▲ ---
 
     update_time_str = datetime.now(JST).strftime('%Y-%m-%d %H:%M:%S JST')
     
