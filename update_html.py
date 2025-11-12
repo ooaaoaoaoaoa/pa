@@ -4,8 +4,8 @@ import urllib.parse
 from datetime import datetime, timezone, timedelta
 
 # --- 設定項目 ---
-GITHUB_USER_NAME = "[あなたのユーザー名]" # ★書き換える
-GITHUB_REPO_NAME = "[リポジトリ名]"   # ★書き換える
+GITHUB_USER_NAME = "ooaaoaoaoaoa" # ★書き換える
+GITHUB_REPO_NAME = "pa"   # ★書き換える
 PAGES_TO_FETCH = 3
 # --------------
 
